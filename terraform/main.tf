@@ -1,6 +1,11 @@
 provider "aws" { region = var.region }
 
+resource "aws_key_pair" "k8s" {
+  key_name   = "k8s-key"
+  public_key = file("C:/Users/20114/.ssh/k8s_key.pub")
+}
 # VPC + Subnet + IGW
+
 resource "aws_vpc" "this" {
   cidr_block = "10.0.0.0/16"
 }
@@ -9,7 +14,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"   
+  availability_zone       = "us-east-1a"
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -64,7 +69,7 @@ resource "aws_security_group" "k8s" {
 resource "aws_instance" "master" {
   ami                         = var.ami_id
   instance_type               = var.master_type
-  key_name                    = var.ssh_key_name
+  key_name                    = aws_key_pair.k8s.key_name
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.k8s.id]
   associate_public_ip_address = true
@@ -78,7 +83,7 @@ resource "aws_instance" "workers" {
   count                       = var.worker_count
   ami                         = var.ami_id
   instance_type               = var.worker_type
-  key_name                    = var.ssh_key_name
+  key_name                    = aws_key_pair.k8s.key_name
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.k8s.id]
   associate_public_ip_address = true
