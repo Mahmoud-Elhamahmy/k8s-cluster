@@ -2,8 +2,9 @@ provider "aws" { region = var.region }
 
 resource "aws_key_pair" "k8s" {
   key_name   = "k8s-key"
-  public_key = file("C:/Users/20114/.ssh/k8s_key.pub")
+  public_key = file("${path.module}/keys/k8s_key.pub")
 }
+
 # VPC + Subnet + IGW
 
 resource "aws_vpc" "this" {
