@@ -1,8 +1,12 @@
 #!/bin/bash
 set -ex
 
+# Update & install dependencies
 apt-get update -y
 apt-get install -y docker.io apt-transport-https curl gnupg lsb-release
+
+# Enable Docker
+systemctl enable --now docker
 
 # Add Kubernetes GPG key
 mkdir -p /etc/apt/keyrings
@@ -12,11 +16,16 @@ curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://dl.k8s.io/a
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] \
 https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
 
+# Install kubelet and kubeadm
 apt-get update -y
 apt-get install -y kubelet kubeadm
 apt-mark hold kubelet kubeadm
 
-# Join cluster (requires automation to fetch from master)
+# Join cluster (requires /tmp/join.sh from master)
 if [ -f /tmp/join.sh ]; then
+  chmod +x /tmp/join.sh
   bash /tmp/join.sh
+else
+  echo "Join script not found. Please copy /tmp/join.sh from master first."
+  exit 1
 fi
