@@ -29,6 +29,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: terraform
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
         run: terraform apply -auto-approve
 
       - name: Save Outputs
