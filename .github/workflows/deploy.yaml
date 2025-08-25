@@ -55,7 +55,7 @@ jobs:
 
       - name: Copy kubeconfig
         run: |
-          echo "${MASTER_IP}"
+          echo "MASTER_IP = '${MASTER_IP}'"
           scp -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:/home/ubuntu/.kube/config ./kubeconfig
           mkdir -p ~/.kube
           cp ./kubeconfig ~/.kube/config
