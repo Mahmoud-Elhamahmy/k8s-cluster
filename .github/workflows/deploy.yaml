@@ -66,6 +66,14 @@ jobs:
           echo "MASTER_IP=${MASTER_IP}"
           echo "WORKER_IPS=${WORKER_IPS}"
 
+      - name: Wait for Master Node to be Ready
+        run: |
+          for i in {1..30}; do
+            ssh -o StrictHostKeyChecking=no ubuntu@${MASTER_IP} 'test -f /home/ubuntu/.kube/config' && break
+            echo "Waiting for kubeconfig..."
+            sleep 10
+          done
+
       - name: Copy kubeconfig
         run: |
           scp -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:/home/ubuntu/.kube/config ./kubeconfig
