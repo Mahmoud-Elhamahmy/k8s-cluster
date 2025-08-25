@@ -28,10 +28,12 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve
 
-      - name: Save master IP
-        id: masterip
+      - name: Save Outputs
+        id: tfoutputs
         working-directory: terraform
-        run: echo "MASTER_IP=$(terraform output -raw master_public_ip)" >> $GITHUB_ENV
+        run: |
+          echo "MASTER_IP=$(terraform output -raw master_public_ip)" >> $GITHUB_ENV
+          echo "WORKER_IPS=$(terraform output -json worker_public_ips)" >> $GITHUB_ENV
 
   k8s:
     runs-on: ubuntu-latest
@@ -42,7 +44,7 @@ jobs:
 
       - name: Install SSH & Kubectl
         run: |
-          sudo apt-get update && sudo apt-get install -y ssh
+          sudo apt-get update && sudo apt-get install -y ssh jq
           curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
@@ -57,6 +59,18 @@ jobs:
           scp -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:/home/ubuntu/.kube/config ./kubeconfig
           mkdir -p ~/.kube
           cp ./kubeconfig ~/.kube/config
+
+      - name: Fetch Join Command
+        run: |
+          scp -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:/home/ubuntu/join.sh ./join.sh
+          chmod +x ./join.sh
+
+      - name: Join Workers
+        run: |
+          echo '${{ env.WORKER_IPS }}' | jq -r '.[]' | while read ip; do
+            scp -o StrictHostKeyChecking=no ./join.sh ubuntu@$ip:/tmp/join.sh
+            ssh -o StrictHostKeyChecking=no ubuntu@$ip "sudo bash /tmp/join.sh"
+          done
 
       - name: Verify Cluster
         run: kubectl get nodes -o wide
