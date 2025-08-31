@@ -26,8 +26,10 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
         run: terraform apply -auto-approve
-        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Get Master IP
         id: get_ip
