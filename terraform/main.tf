@@ -70,7 +70,7 @@ resource "aws_security_group" "k8s" {
 resource "aws_instance" "master" {
   ami           = var.ubuntu_ami
   instance_type = var.master_instance_type
-  key_name      = aws_key_pair.deployer.key_name
+  key_name      = aws_key_pair.deployer.k8s
   security_groups = [aws_security_group.k8s.name]
   iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
   user_data     = file("${path.module}/user_data_master.sh")
@@ -84,7 +84,7 @@ resource "aws_instance" "worker" {
   count         = var.worker_count
   ami           = var.ubuntu_ami
   instance_type = var.worker_instance_type
-  key_name      = aws_key_pair.deployer.key_name
+  key_name      = aws_key_pair.deployer.k8s
   security_groups = [aws_security_group.k8s.name]
   iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
   user_data     = file("${path.module}/user_data_worker.sh")
