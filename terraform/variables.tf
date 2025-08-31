@@ -1,17 +1,22 @@
-variable "region" { default = "us-east-1" }
-variable "master_type" { default = "t3.medium" }
-variable "worker_type" { default = "t3.medium" }
-variable "worker_count" { default = 1 }
-variable "ssh_public_key" {
-  type        = string
-  description = "SSH public key for EC2 instances"
+variable "aws_region" {
+  default = "us-east-1"
 }
-
-variable "my_ip" {
-  description = "Restrict access to your IP"
-  default     = "197.52.44.177/32"
+variable "master_instance_type" {
+  default = "t3.medium"
 }
-variable "ami_id" {
-  description = "Ubuntu 22.04 AMI"
-  default     = "ami-0bbdd8c17ed981ef9"
+variable "worker_instance_type" {
+  default = "t3.medium"
+}
+variable "worker_count" {
+  default = 2
+}
+variable "allowed_api_ips" {
+  default = ["0.0.0.0/0"]
+  description = "CIDR blocks allowed to access Kubernetes API server"
+}
+variable "key_name" {
+  description = "SSH key name"
+}
+variable "ubuntu_ami" {
+  description = "Ubuntu 22.04 AMI ID for your region"
 }
