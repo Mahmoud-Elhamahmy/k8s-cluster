@@ -91,36 +91,6 @@ resource "aws_security_group" "k8s" {
 }
 
 ############################
-# IAM Role for SSM         #
-############################
-
-resource "aws_iam_role" "ssm_role" {
-  name = "k8s-ssm-role"
-  assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Principal": {
-          "Service": "ec2.amazonaws.com"
-        },
-        "Effect": "Allow"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ssm_attach" {
-  role       = aws_iam_role.ssm_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "ssm_profile" {
-  name = "k8s-ssm-profile"
-  role = aws_iam_role.ssm_role.name
-}
-
-############################
 # EC2 Instances            #
 ############################
 
@@ -131,7 +101,6 @@ resource "aws_instance" "master" {
   subnet_id                   = aws_subnet.k8s_public_subnet.id
   associate_public_ip_address = true
   security_groups             = [aws_security_group.k8s.id]
-  iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
   user_data                   = file("${path.module}/userdata/user_data_master.sh")
   tags = { Name = "k8s-master" }
 }
@@ -144,7 +113,6 @@ resource "aws_instance" "worker" {
   subnet_id                   = aws_subnet.k8s_public_subnet.id
   associate_public_ip_address = true
   security_groups             = [aws_security_group.k8s.id]
-  iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
   user_data                   = file("${path.module}/userdata/user_data_worker.sh")
   tags = { Name = "k8s-worker-${count.index}" }
 }
