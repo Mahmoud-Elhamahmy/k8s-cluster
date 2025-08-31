@@ -67,29 +67,59 @@ resource "aws_security_group" "k8s" {
   }
 }
 
-# Master Node
 resource "aws_instance" "master" {
-  ami                         = var.ami_id
-  instance_type               = var.master_type
-  key_name                    = aws_key_pair.k8s.key_name
-  subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.k8s.id]
-  associate_public_ip_address = true
-  user_data                   = file("${path.module}/userdata/master.sh")
+  ami           = var.ubuntu_ami
+  instance_type = var.master_instance_type
+  key_name      = aws_key_pair.deployer.key_name
+  security_groups = [aws_security_group.k8s.name]
+  iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
+  user_data     = file("${path.module}/user_data_master.sh")
 
-  tags = { Name = "k8s-master" }
+  tags = {
+    Name = "k8s-master"
+  }
 }
 
-# Worker Nodes
-resource "aws_instance" "workers" {
-  count                       = var.worker_count
-  ami                         = var.ami_id
-  instance_type               = var.worker_type
-  key_name                    = aws_key_pair.k8s.key_name
-  subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.k8s.id]
-  associate_public_ip_address = true
-  user_data                   = file("${path.module}/userdata/worker.sh")
+resource "aws_instance" "worker" {
+  count         = var.worker_count
+  ami           = var.ubuntu_ami
+  instance_type = var.worker_instance_type
+  key_name      = aws_key_pair.deployer.key_name
+  security_groups = [aws_security_group.k8s.name]
+  iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
+  user_data     = file("${path.module}/user_data_worker.sh")
 
-  tags = { Name = "k8s-worker-${count.index}" }
+  tags = {
+    Name = "k8s-worker-${count.index}"
+  }
+}
+
+resource "aws_iam_role" "ssm_role" {
+  name = "k8s-ssm-role"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Principal": {
+          "Service": "ec2.amazonaws.com"
+        },
+        "Effect": "Allow"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ssm_profile" {
+  name = "k8s-ssm-profile"
+  role = aws_iam_role.ssm_role.name
+}
+
+output "master_public_ip" {
+  value = aws_instance.master.public_ip
 }
