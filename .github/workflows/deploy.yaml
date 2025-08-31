@@ -5,7 +5,6 @@ on:
 
 env:
   TF_WORKING_DIR: ./terraform
-  
 
 jobs:
   terraform:
@@ -30,38 +29,43 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
-        working-directory: terraform
+        working-directory: ${{ env.TF_WORKING_DIR }}
         env:
           TF_VAR_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
         run: terraform apply -auto-approve
 
       - name: Save Outputs
         id: tfoutputs
-        working-directory: terraform
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          echo "master_ip=$(terraform output -raw master_public_ip)" >> $GITHUB_OUTPUT
-          echo "worker_ips=$(terraform output -json worker_public_ips)" >> $GITHUB_OUTPUT
+          # Master IP
+          MASTER_IP=$(terraform output -raw master_public_ip)
+          echo "master_ip=$MASTER_IP" >> $GITHUB_OUTPUT
+
+          # Worker IPs: convert JSON array to space-separated string
+          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r '.[]')
+          echo "worker_ips=$WORKER_IPS" >> $GITHUB_OUTPUT
 
       - name: Get Join Command from Master
         id: get_join_cmd
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ env.master_ip }}
+          host: ${{ steps.tfoutputs.outputs.master_ip }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: cat /home/ubuntu/join-command.txt
 
       - name: Join Workers to Cluster
         run: |
-          JOIN_CMD="${{ steps.get_join_cmd.outputs.stdout }}"
-          for IP in $worker_ips; do
-            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$IP "sudo $JOIN_CMD"
+          for IP in ${{ steps.tfoutputs.outputs.worker_ips }}; do
+            echo "Joining worker $IP to cluster"
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$IP "sudo ${{ steps.get_join_cmd.outputs.stdout }}"
           done
 
       - name: Deploy Juice Shop & Ingress
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ env.master_ip }}
+          host: ${{ steps.tfoutputs.outputs.master_ip }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
