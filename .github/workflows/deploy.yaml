@@ -38,6 +38,22 @@ jobs:
           echo "master_ip=$(terraform output -raw master_public_ip)" >> $GITHUB_OUTPUT
           echo "worker_ips=$(terraform output -json worker_public_ips)" >> $GITHUB_OUTPUT
 
+      - name: Get Join Command from Master
+        id: get_join_cmd
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ env.MASTER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: cat /home/ubuntu/join-command.txt
+
+      - name: Join Workers to Cluster
+        run: |
+          JOIN_CMD="${{ steps.get_join_cmd.outputs.stdout }}"
+          for IP in $WORKER_IPS; do
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$IP "sudo $JOIN_CMD"
+          done
+
       - name: Deploy Juice Shop & Ingress
         uses: appleboy/ssh-action@v0.1.10
         with:
