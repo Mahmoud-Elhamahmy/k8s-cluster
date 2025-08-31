@@ -132,7 +132,7 @@ resource "aws_instance" "master" {
   associate_public_ip_address = true
   security_groups             = [aws_security_group.k8s.id]
   iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
-  user_data                   = file("${path.module}/user_data_master.sh")
+  user_data                   = file("${path.module}/userdata/user_data_master.sh")
   tags = { Name = "k8s-master" }
 }
 
@@ -145,6 +145,6 @@ resource "aws_instance" "worker" {
   associate_public_ip_address = true
   security_groups             = [aws_security_group.k8s.id]
   iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
-  user_data                   = file("${path.module}/user_data_worker.sh")
+  user_data                   = file("${path.module}/userdata/user_data_worker.sh")
   tags = { Name = "k8s-worker-${count.index}" }
 }
