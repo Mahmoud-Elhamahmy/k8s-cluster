@@ -1,64 +1,34 @@
-markdown name=README.md
-# Automated Kubernetes Cluster & Juice Shop Deployment (AWS, Terraform, GitHub Actions)
+# Fully Automated K8s Cluster & Juice Shop on AWS (Terraform + GitHub Actions)
 
 ## Overview
 
-This repository provisions a self-managed Kubernetes cluster (not EKS/GKE) on AWS EC2 using Terraform, restricts API access to specific IPs, and deploys Juice Shop via GitHub Actions.
-
-**Features:**
-- Automated infrastructure provisioning using Terraform
-- API server access restricted to your IP
-- K8s setup with kubeadm (master + workers)
-- NGINX Ingress Controller
-- Juice Shop deployment, service, and ingress
-- GitHub Actions for continuous delivery
-
-## Prerequisites
-
-- AWS account and user with EC2 permissions
-- SSH key pair in AWS (`key_name`)
-- Your public IP address
-- GitHub repository secrets:
-  - `AWS_ACCESS_KEY_ID`
-  - `AWS_SECRET_ACCESS_KEY`
-  - `SSH_PRIVATE_KEY` (private key for accessing EC2 instances)
-- Replace the Ubuntu AMI ID in `main.tf` with a valid one for your region.
+- Terraform provisions VPC, subnet, EC2 (master/workers), security groups, SSM, SSH keys
+- Master auto-initializes, creates join token, stores join command in SSM parameter
+- Workers fetch join command from SSM and join cluster automatically
+- NGINX Ingress and Juice Shop automatically deployed via GitHub Actions
 
 ## Usage
 
-1. Fork/clone this repository.
-2. Edit `terraform/variables.tf`:
-    - Set your public IP in `allowed_api_ips`
-    - Set your SSH key name in `key_name`
-3. Set GitHub secrets as above.
-4. Push changes to `main`—GitHub Actions will provision infrastructure and deploy manifests.
+1. Set AWS credentials as GitHub secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+2. Set your SSH private key as `SSH_PRIVATE_KEY`
+3. Set your public IP in `terraform/variables.tf` (`allowed_api_ips`)
+4. Set your SSH key name and Ubuntu AMI in `variables.tf`
+5. Push to `main` branch—GitHub Actions provisions infra, joins workers, deploys manifests
 
 ## Monitoring Recommendations
 
-- **Prometheus Operator & Grafana**: Cluster/app metrics and dashboards
-- **Node Exporter**: VM metrics
-- **EFK/ELK Stack**: Log aggregation/search
-- **Kube-state-metrics**: Cluster state
-- **NGINX Metrics**: Ingress monitoring
-- **Falco**: Runtime security monitoring
+- Prometheus Operator & Grafana
+- Node Exporter
+- EFK/ELK Stack
+- Kube-state-metrics
+- NGINX Metrics
+- Falco
 
-## Directory Structure
+## How Worker Join is Automated
 
-```
-.
-├── .github/
-│   └── workflows/
-│       └── terraform.yml
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── providers.tf
-│   ├── security.tf
-│   ├── user_data_master.sh
-│   └── user_data_worker.sh
-├── manifests/
-│   ├── juice-shop-deployment.yaml
-│   ├── juice-shop-service.yaml
-│   └── juice-shop-ingress.yaml
-```
+- Master writes the join command to AWS SSM Parameter Store
+- Workers fetch the join command in their cloud-init and execute it
+
+## DNS/SSL
+
+- Ingress uses `juice-shop.local`. For public traffic, set up a real domain and update the ingress manifest.
