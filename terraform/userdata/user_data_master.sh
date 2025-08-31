@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 sudo apt-get update
-sudo apt-get install -y docker.io apt-transport-https curl jq awscli
+sudo apt-get install -y docker.io apt-transport-https curl
 sudo systemctl enable docker
 sudo systemctl start docker
 
@@ -24,9 +24,8 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 # Install ingress-nginx
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
 
-# Generate join command and put in SSM Parameter Store
-JOIN_CMD=$(sudo kubeadm token create --print-join-command)
-aws ssm put-parameter --name "/k8s/join-command" --type "String" --value "$JOIN_CMD" --overwrite --region ${AWS_REGION:-us-east-1}
+# Output join command to a file for automation
+sudo kubeadm token create --print-join-command > /home/ubuntu/join-command.txt
 
 # Place manifests for juice shop
 cat > /home/ubuntu/juice-shop-deployment.yaml <<EOF
