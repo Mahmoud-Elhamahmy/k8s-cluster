@@ -15,6 +15,8 @@ variable "allowed_api_ips" {
   description = "CIDR blocks allowed to access Kubernetes API server"
 }
 variable "ssh_public_key" {
+  type        = string
+  description = "SSH public key for EC2 instances"
 }
 
 variable "ubuntu_ami" {
