@@ -14,9 +14,7 @@ variable "allowed_api_ips" {
   default = ["0.0.0.0/0"]
   description = "CIDR blocks allowed to access Kubernetes API server"
 }
-variable "key_name" {
-  description = "SSH key name"
-}
+
 variable "ubuntu_ami" {
   description = "Ubuntu 22.04 AMI ID for your region"
   default     = "ami-0bbdd8c17ed981ef9"
