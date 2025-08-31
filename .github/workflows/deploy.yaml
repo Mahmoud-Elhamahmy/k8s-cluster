@@ -31,12 +31,12 @@ jobs:
           TF_VAR_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
         run: terraform apply -auto-approve
 
-      - name: Get Master IP
-        id: get_ip
+      - name: Save Outputs
+        id: tfoutputs
+        working-directory: terraform
         run: |
-          MASTER_IP=$(terraform output -state=${{ env.TF_WORKING_DIR }}/terraform.tfstate master_public_ip)
-          echo "MASTER_IP=$MASTER_IP" >> $GITHUB_ENV
-        working-directory: ${{ env.TF_WORKING_DIR }}
+          echo "master_ip=$(terraform output -raw master_public_ip)" >> $GITHUB_OUTPUT
+          echo "worker_ips=$(terraform output -json worker_public_ips)" >> $GITHUB_OUTPUT
 
       - name: Deploy Juice Shop & Ingress
         uses: appleboy/ssh-action@v0.1.10
