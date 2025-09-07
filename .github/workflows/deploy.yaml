@@ -40,11 +40,12 @@ jobs:
         run: |
           # Master IP
           MASTER_IP=$(terraform output -raw master_public_ip)
-          echo "master_ip=$MASTER_IP" >> $GITHUB_OUTPUT
+          echo "master_ip=${MASTER_IP}" >> "$GITHUB_OUTPUT"
           
-          # Worker IPs: space-separated string
-          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r '.value | join(" ")')
-          echo "worker_ips=$WORKER_IPS" >> $GITHUB_OUTPUT
+          # Worker IPs
+          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r 'join(" ")')
+          echo "worker_ips=${WORKER_IPS}" >> "$GITHUB_OUTPUT"
+
 
       - name: Get Join Command from Master
         id: get_join_cmd
