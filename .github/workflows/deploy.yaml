@@ -43,7 +43,7 @@ jobs:
           echo "master_ip=$MASTER_IP" >> $GITHUB_OUTPUT
 
           # Worker IPs: convert JSON array to space-separated string
-          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r '.[]')
+          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r '.value[]')
           echo "worker_ips=$WORKER_IPS" >> $GITHUB_OUTPUT
 
       - name: Get Join Command from Master
