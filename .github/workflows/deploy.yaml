@@ -34,18 +34,21 @@ jobs:
           TF_VAR_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
         run: terraform apply -auto-approve
 
+      - name: Debug Terraform Outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform output -json
+
       - name: Save Outputs
         id: tfoutputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          # Master IP
+          # Master IP (string)
           MASTER_IP=$(terraform output -raw master_public_ip)
           echo "master_ip=${MASTER_IP}" >> "$GITHUB_OUTPUT"
           
-          # Worker IPs
-          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r 'join(" ")')
+          # Worker IPs (list -> space-separated string)
+          WORKER_IPS=$(terraform output -json worker_public_ips | jq -r '.value | join(" ")')
           echo "worker_ips=${WORKER_IPS}" >> "$GITHUB_OUTPUT"
-
 
       - name: Get Join Command from Master
         id: get_join_cmd
@@ -58,9 +61,11 @@ jobs:
 
       - name: Join Workers to Cluster
         run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
           for IP in ${{ steps.tfoutputs.outputs.worker_ips }}; do
             echo "Joining worker $IP to cluster"
-            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$IP "sudo ${{ steps.get_join_cmd.outputs.stdout }}"
+            ssh -i private_key.pem -o StrictHostKeyChecking=no ubuntu@$IP "sudo ${{ steps.get_join_cmd.outputs.stdout }}"
           done
 
       - name: Deploy Juice Shop & Ingress
